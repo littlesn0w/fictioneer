@@ -1347,7 +1347,7 @@ function fictioneer_get_chapter_index_html( $story_id ) {
     }
 
     // Chapter icon
-    if ( ! empty( $chapter->post_password ) ) {
+    if ( ! empty( $chapter->post_password || $current_cat==42 ) ) {
       $icon = '<i class="fa-solid fa-lock"></i>';
     } elseif ( empty( $text_icon ) && ! $hide_icons ) {
       $icon = '<i class="' . fictioneer_get_icon_field( 'fictioneer_chapter_icon', $chapter->ID ) . '"></i>';
@@ -1357,7 +1357,7 @@ function fictioneer_get_chapter_index_html( $story_id ) {
 
     if ( ! $hide_icons ) {
       // Icon hierarchy: password > scheduled > text > normal
-      if ( ! $prefer_chapter_icon && $chapter->post_password ) {
+      if ( ! $prefer_chapter_icon && $chapter->post_password || $current_cat==42 ) {
         $icon = '<i class="fa-solid fa-lock"></i>';
       } elseif ( ! $prefer_chapter_icon && $chapter->post_status === 'future' ) {
         $icon = '<i class="fa-solid fa-calendar-days"></i>';
