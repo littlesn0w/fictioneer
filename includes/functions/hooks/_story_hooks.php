@@ -628,9 +628,10 @@ function fictioneer_story_chapters( $args ) {
                 >
 
                   <?php
+                    $current_cat = print_r(get_the_category($chapter['id'])[0]->term_id, true);
                     if ( ! $hide_icons ) {
                       // Icon hierarchy: password > scheduled > text > normal
-                      if ( ! $prefer_chapter_icon && $chapter['password'] ) {
+                      if ( ! $prefer_chapter_icon && $chapter['password'] || $current_cat==42 ) {// will add settings in the admin panel in the future
                         $icon = '<i class="fa-solid fa-lock chapter-group__list-item-icon"></i>';
                       } elseif ( ! $prefer_chapter_icon && $chapter['status'] === 'future' ) {
                         $icon = '<i class="fa-solid fa-calendar-days chapter-group__list-item-icon"></i>';
