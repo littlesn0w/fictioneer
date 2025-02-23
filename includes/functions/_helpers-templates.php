@@ -1345,7 +1345,7 @@ function fictioneer_get_chapter_index_html( $story_id ) {
     if ( $chapter->post_password ) {
       $classes[] = 'has-password';
     }
-
+    $current_cat = print_r(get_the_category($chapter->ID)[0]->term_id, true);
     // Chapter icon
     if ( ! empty( $chapter->post_password || $current_cat==42 ) ) {
       $icon = '<i class="fa-solid fa-lock"></i>';
