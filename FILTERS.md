@@ -478,22 +478,48 @@ Filters the intermediate output array of the chapter micro menu in the `fictione
 
 ---
 
+### `apply_filters( 'fictioneer_filter_chapter_nav_buttons', $output, $post_id, $args, $location )`
+Filters the intermediate output array of the chapter navigation and top/bottom scroll buttons before it is imploded and rendered in the `fictioneer_chapter_actions_top_right` and `fictioneer_chapter_actions_bottom_right` action hooks.
+
+**Parameters:**
+* $output (string[]) – Array of link HTML.
+  * 'previous' (string|null) – Link to indexed previous chapter (if any).
+  * 'scroll' (string) – Link to scroll up or down, depending on the `$location` parameter.
+  * 'next' (string|null) – Link to indexed next chapter (if any).
+* $post_id (int) – Chapter post ID.
+* $args (array) – Arguments passed to the action hook.
+  * 'chapter_ids' (array) – IDs of visible chapters in the same story or empty array.
+  * 'indexed_chapter_ids' (array) – IDs of accessible chapters in the same story or empty array.
+  * 'prev_index' (int|boolean) – Index of previous chapter or false if outside bounds.
+  * 'next_index' (int|boolean) – Index of next chapter or false if outside bounds.
+* $location (string) – Location of the navigation. Either `'top'` or `'bottom'`.
+
+**Example:**
+```php
+function child_remove_chapter_nav_scroll_buttons( $output ) {
+  unset( $output['scroll'] );
+
+  return $output;
+}
+add_filter( 'fictioneer_filter_chapter_nav_buttons', 'child_remove_chapter_nav_scroll_buttons' );
+```
+
+---
+
 ### `apply_filters( 'fictioneer_filter_chapter_nav_buttons_allowed_statuses', $statuses, $post_id, $args, $location )`
 Filters the array of allowed post statuses for the chapter navigation buttons in the `fictioneer_chapter_nav_buttons()` function. The default is `['publish']`, but you could add `'private'` or `'future'` if you want to allow the navigation to render with these statuses.
 
 **Note:** If you enable the `FICTIONEER_LIST_SCHEDULED_CHAPTERS` constant, the filter will be used to treat scheduled chapters as published.
 
 **Parameters:**
-* $statuses (array) – Array of allowed post statuses.
-* $post_id (int) – Current post ID.
+* $statuses (string[]) – Array of allowed post statuses.
+* $post_id (int) – Chapter post ID.
 * $args (array) – Arguments passed to the function.
+  * 'chapter_ids' (array) – IDs of visible chapters in the same story or empty array.
+  * 'indexed_chapter_ids' (array) – IDs of accessible chapters in the same story or empty array.
+  * 'prev_index' (int|boolean) – Index of previous chapter or false if outside bounds.
+  * 'next_index' (int|boolean) – Index of next chapter or false if outside bounds.
 * $location (string) – Location of the navigation. Either `'top'` or `'bottom'`.
-
-**$args:**
-* $chapter_ids (array) – IDs of visible chapters in the same story or empty array.
-* $indexed_chapter_ids (array) – IDs of accessible chapters in the same story or empty array.
-* $prev_index (int|boolean) – Index of previous chapter or false if outside bounds.
-* $next_index (int|boolean) – Index of next chapter or false if outside bounds.
 
 **Example:**
 ```php
@@ -511,8 +537,8 @@ add_filter( 'fictioneer_filter_chapter_nav_buttons_allowed_statuses', 'child_all
 Filters the array of allowed post statuses for the chapter subscribe button in the `fictioneer_chapter_subscribe_button()` function. The default is `['publish']`, but you could add `'private'` or `'future'` if you want to allow the button to render with these statuses.
 
 **Parameters:**
-* $statuses (array) – Array of allowed post statuses.
-* $post_id (int) – Current post ID.
+* $statuses (string[]) – Array of allowed post statuses.
+* $post_id (int) – Chapter post ID.
 
 ---
 
@@ -520,8 +546,8 @@ Filters the array of allowed post statuses for the chapter subscribe button in t
 Filters the array of allowed post statuses for the chapter media buttons in the `fictioneer_chapter_media_buttons()` function. The default is `['publish']`, but you could add `'private'` or `'future'` if you want to allow the buttons to render with these statuses.
 
 **Parameters:**
-* $statuses (array) – Array of allowed post statuses.
-* $post_id (int) – Current post ID.
+* $statuses (string[]) – Array of allowed post statuses.
+* $post_id (int) – Chapter post ID.
 
 ---
 
@@ -751,16 +777,16 @@ Filters the intermediate output array in the `_card-collection.php` partial befo
 Filters the arguments passed to the `partials/_card-collection` template part in the `fictioneer_collections_list( $args )` function, normally added via the `fictioneer_collections_after_content` hook.
 
 **$card_args:**
-* $cache (boolean) – Return of `fictioneer_caching_active()`.
-* $order (string) – Current query order argument. Default 'desc'.
-* $orderby (string) – Current query orderby argument. Default 'modified'.
-* $ago (int|string) – Current date query argument part. Default 0.
+* 'cache' (boolean) – Return of `fictioneer_caching_active()`.
+* 'order' (string) – Current query order argument. Default 'desc'.
+* 'orderby' (string) – Current query orderby argument. Default 'modified'.
+* 'ago' (int|string) – Current date query argument part. Default 0.
 
 **$args:**
-* $current_page (int) – Current page if paginated or `1`.
-* $post_id (int) – Current post ID.
-* $collections (WP_Query) – Paginated query of all visible collections.
-* $queried_type (string) – `'fcn_collection'`
+* 'current_page' (int) – Current page if paginated or `1`.
+* 'post_id' (int) – Current post ID.
+* 'collections' (WP_Query) – Paginated query of all visible collections.
+* 'queried_type' (string) – `'fcn_collection'`
 
 ---
 
@@ -2443,6 +2469,16 @@ Filters the Transient HTML of the taxonomy submenu before it is rendered. The di
 * $html (string) – The current submenu HTML to be rendered.
 * $type (string) – The taxonomy type.
 * $hide_empty (boolean) – Whether to hide empty terms. Default `true`.
+
+---
+
+### `apply_filters( 'fictioneer_filter_caching_active', $bool, $context, $compatibility_mode )`
+Filters the boolean return value of the check for active known cache plugins (not necessarily that the cache is enabled in the plugin).
+
+**Parameters:**
+* $bool (boolean) – Whether a know cache plugin is active.
+* $context (string|null) – Optional. The context in which the check is used.
+* $compatibility_mode (boolean) – Whether the cache compatibility mode option is enabled.
 
 ---
 

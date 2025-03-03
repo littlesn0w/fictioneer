@@ -188,7 +188,73 @@ function fictioneer_get_metabox_text( $post, $meta_key, $args = [] ) {
 }
 
 /**
- * Returns HTML for a number input meta field
+ * Return HTML for a input/select combo meta field.
+ *
+ * @since 5.27.4
+ *
+ * @param WP_Post $post      The post.
+ * @param string  $meta_key  The meta key.
+ * @param array   $args {
+ *   Optional. An array of additional arguments.
+ *
+ *   @type string $label        Label above the field.
+ *   @type string $description  Description below the field.
+ *   @type string $placeholder  Placeholder text.
+ *   @type string $type         Type of the input. Default 'text'.
+ *   @type string $maxlength    Maxlength attribute.
+ *   @type bool   $required     Whether the field is required. Default false.
+ *   @type array  $attributes   Additional attributes.
+ * }
+ *
+ * @return string The HTML markup for the field.
+ */
+
+function fictioneer_get_metabox_combo( $post, $meta_key, $args = [] ) {
+  // Setup
+  $meta_value = esc_attr( get_post_meta( $post->ID, $meta_key, true ) );
+  $label = strval( $args['label'] ?? '' );
+  $description = strval( $args['description'] ?? '' );
+  $placeholder = strval( $args['placeholder'] ?? '' );
+  $type = $args['type'] ?? 'text';
+  $required = ( $args['required'] ?? 0 ) ? 'required' : '';
+  $data_required = $required ? 'data-required="true"' : '';
+  $maxlength = isset( $args['maxlength'] ) ? 'maxlength="' . $args['maxlength'] . '"' : '';
+  $attributes = implode( ' ', $args['attributes'] ?? [] );
+
+  ob_start();
+
+  // Start HTML ---> ?>
+  <div class="fictioneer-meta-field fictioneer-meta-field--combo" <?php echo $data_required; ?>>
+
+    <?php if ( $label ) : ?>
+      <label class="fictioneer-meta-field__label" for="<?php echo $meta_key; ?>"><?php echo $label; ?></label>
+    <?php endif; ?>
+
+    <input type="hidden" name="<?php echo $meta_key; ?>" value="0" autocomplete="off">
+
+    <div class="fictioneer-meta-field__wrapper fictioneer-meta-field__wrapper--combo">
+
+      <select name="combo-select-<?php echo $meta_key ?>" class="fictioneer-meta-field__select fictioneer-meta-field__select--combo" data-meta-field-controller-target="combo">
+        <option value="0"><?php _e( '— Select Group —', 'fictioneer' ); ?></option>
+        <option value="-1"><?php _e( '— New Group —', 'fictioneer' ); ?></option>
+      </select>
+
+      <input type="<?php echo $type; ?>" id="<?php echo $meta_key; ?>" class="fictioneer-meta-field__input fictioneer-meta-field__input--combo" name="<?php echo $meta_key; ?>" value="<?php echo $meta_value; ?>" placeholder="<?php echo $placeholder; ?>" autocomplete="off" <?php echo $maxlength; ?> <?php echo $attributes; ?> <?php echo $required; ?>>
+
+    </div>
+
+    <?php if ( $description ) : ?>
+      <div class="fictioneer-meta-field__description"><?php echo $description; ?></div>
+    <?php endif; ?>
+
+  </div>
+  <?php // <--- End HTML
+
+  return ob_get_clean();
+}
+
+/**
+ * Return HTML for a number input meta field.
  *
  * @since 5.15.0
  *
@@ -505,7 +571,7 @@ function fictioneer_get_metabox_textarea( $post, $meta_key, $args = [] ) {
     <input type="hidden" name="<?php echo $meta_key; ?>" value="0" autocomplete="off">
 
     <div class="fictioneer-meta-field__wrapper">
-      <textarea id="<?php echo $meta_key; ?>" class="fictioneer-meta-field__textarea <?php echo $input_classes; ?>" name="<?php echo $meta_key; ?>" placeholder="<?php echo $placeholder; ?>" autocomplete="off" <?php echo $attributes; ?> <?php echo $required; ?>><?php echo $meta_value; ?></textarea>
+      <textarea id="<?php echo $meta_key; ?>" class="fictioneer-meta-field__textarea <?php echo $input_classes; ?>" name="<?php echo $meta_key; ?>" placeholder="<?php echo $placeholder; ?>" autocomplete="off" <?php echo $attributes; ?> <?php echo $required; ?>><?php echo esc_textarea( $meta_value ); ?></textarea>
     </div>
 
     <?php if ( $description ) : ?>
@@ -2726,7 +2792,7 @@ function fictioneer_render_chapter_data_metabox( $post ) {
   );
 
   // Group
-  $output['fictioneer_chapter_group'] = fictioneer_get_metabox_text(
+  $output['fictioneer_chapter_group'] = fictioneer_get_metabox_combo(
     $post,
     'fictioneer_chapter_group',
     array(
@@ -3220,11 +3286,24 @@ function fictioneer_render_extra_metabox( $post ) {
     );
   }
 
-  // Checkbox: Disable new comments
+  // Flags...
   $flag_count = 0;
+
   $output['flags_heading'] = '<div class="fictioneer-meta-field-heading">' .
     _x( 'Flags', 'Metabox checkbox heading.', 'fictioneer' ) . '</div>';
 
+  // Checkbox: Patreon inheritance
+  if ( $can_patreon && get_option( 'fictioneer_enable_patreon_locks' ) ) {
+    $output['fictioneer_patreon_inheritance'] = fictioneer_get_metabox_checkbox(
+      $post,
+      'fictioneer_patreon_inheritance',
+      __( 'Chapters inherit Patreon settings', 'fictioneer' )
+    );
+
+    $flag_count++;
+  }
+
+  // Checkbox: Disable new comments
   if ( in_array( $post->post_type, ['post', 'page', 'fcn_story', 'fcn_chapter'] ) ) {
     $output['fictioneer_disable_commenting'] = fictioneer_get_metabox_checkbox(
       $post,
@@ -3389,6 +3468,11 @@ function fictioneer_save_extra_metabox( $post_id ) {
       // Threshold
       if ( isset( $_POST['fictioneer_patreon_lock_amount'] ) ) {
         $fields['fictioneer_patreon_lock_amount'] = absint( $_POST['fictioneer_patreon_lock_amount'] );
+      }
+
+      // Inheritance
+      if ( isset( $_POST['fictioneer_patreon_inheritance'] ) ) {
+        $fields['fictioneer_patreon_inheritance'] = fictioneer_sanitize_checkbox( $_POST['fictioneer_patreon_inheritance'] );
       }
     }
   }

@@ -414,8 +414,7 @@ if ( ! function_exists( 'fictioneer_get_story_data' ) ) {
 
       // Time to refresh comment count?
       $comment_count_delay = ( $meta_cache['comment_count_timestamp'] ?? 0 ) + FICTIONEER_STORY_COMMENT_COUNT_TIMEOUT;
-      $refresh_comments = $comment_count_delay < time() ||
-        ( $args['refresh_comment_count'] ?? 0 ) || fictioneer_caching_active( 'story_data_refresh_comment_count' );
+      $refresh_comments = $comment_count_delay < time() || ( $args['refresh_comment_count'] ?? 0 );
 
       // Refresh comment count
       if ( $refresh_comments ) {
@@ -645,119 +644,99 @@ function fictioneer_get_story_comment_count( $story_id, $chapter_ids = null ) {
 
 if ( ! function_exists( 'fictioneer_get_author_statistics' ) ) {
   /**
-   * Returns an author's statistics
-   *
-   * Note: Cached as meta field for an hour.
+   * Returns an author's statistics.
    *
    * @since 4.6.0
+   * @since 5.27.4 - Optimized.
    *
    * @param int $author_id  User ID of the author.
    *
-   * @return array|boolean Array of statistics or false if user does not exist.
+   * @return array|false Array of statistics or false if user does not exist.
    */
 
   function fictioneer_get_author_statistics( $author_id ) {
-    // Setup
+    global $wpdb;
+
+    // Validate
     $author_id = fictioneer_validate_id( $author_id );
 
-    if ( ! $author_id ) {
+    if ( ! $author_id || ! get_user_by( 'id', $author_id ) ) {
       return false;
     }
-
-    $author = get_user_by( 'id', $author_id );
-
-    if ( ! $author ) {
-      return false;
-    }
-
-    $cache_plugin_active = fictioneer_caching_active( 'author_statistics' );
 
     // Meta cache?
-    if ( ! $cache_plugin_active ) {
-      $meta_cache = $author->fictioneer_author_statistics;
-
+    if ( FICTIONEER_ENABLE_AUTHOR_STATS_META_CACHE ) {
+      $meta_cache = get_user_meta( $author_id, 'fictioneer_author_statistics', true );
       if ( $meta_cache && ( $meta_cache['valid_until'] ?? 0 ) > time() ) {
         return $meta_cache;
       }
     }
 
-    // Get stories
-    $stories = get_posts(
-      array(
-        'post_type' => 'fcn_story',
-        'post_status' => 'publish',
-        'author' => $author_id,
-        'numberposts' => -1,
-        'update_post_meta_cache' => true,
-        'update_post_term_cache' => false,
-        'no_found_rows' => true
-      )
+    // SQL: Fetch all required data
+    $posts = $wpdb->get_results(
+      $wpdb->prepare(
+        "SELECT p.ID, p.post_type, p.comment_count,
+          wc.meta_value AS word_count,
+          sh.meta_value AS story_hidden,
+          ch.meta_value AS chapter_hidden,
+          nch.meta_value AS chapter_no_chapter
+        FROM {$wpdb->posts} p
+        LEFT JOIN {$wpdb->postmeta} wc  ON p.ID = wc.post_id  AND wc.meta_key = '_word_count'
+        LEFT JOIN {$wpdb->postmeta} sh  ON p.ID = sh.post_id  AND sh.meta_key = 'fictioneer_story_hidden'
+        LEFT JOIN {$wpdb->postmeta} ch  ON p.ID = ch.post_id  AND ch.meta_key = 'fictioneer_chapter_hidden'
+        LEFT JOIN {$wpdb->postmeta} nch ON p.ID = nch.post_id AND nch.meta_key = 'fictioneer_chapter_no_chapter'
+        WHERE p.post_status = 'publish'
+          AND p.post_author = %d
+          AND p.post_type IN ('fcn_story', 'fcn_chapter')",
+        $author_id
+      ),
+      ARRAY_A
     );
 
-    // Filter out unwanted stories (faster than meta query)
-    $stories = array_filter( $stories, function ( $post ) {
-      // Story hidden?
-      $story_hidden = get_post_meta( $post->ID, 'fictioneer_story_hidden', true );
-
-      return empty( $story_hidden ) || $story_hidden === '0';
-    });
-
-    // Get chapters
-    $chapters = get_posts(
-      array(
-        'post_type' => 'fcn_chapter',
-        'post_status' => 'publish',
-        'author' => $author_id,
-        'numberposts' => -1,
-        'update_post_meta_cache' => true,
-        'update_post_term_cache' => false,
-        'no_found_rows' => true
-      )
-    );
-
-    // Filter out unwanted chapters (faster than meta query)
-    $chapters = array_filter( $chapters, function ( $post ) {
-      // Chapter hidden?
-      $chapter_hidden = get_post_meta( $post->ID, 'fictioneer_chapter_hidden', true );
-      $not_hidden = empty( $chapter_hidden ) || $chapter_hidden === '0';
-
-      // Not a chapter?
-      $no_chapter = get_post_meta( $post->ID, 'fictioneer_chapter_no_chapter', true );
-      $is_chapter = empty( $no_chapter ) || $no_chapter === '0';
-
-      // Only keep if both conditions are met
-      return $not_hidden && $is_chapter;
-    });
-
-    // Count words and comments
+    // Process
+    $story_count = 0;
+    $chapter_count = 0;
     $word_count = 0;
     $comment_count = 0;
 
-    foreach ( $stories as $story ) {
-      $word_count += fictioneer_get_word_count( $story->ID );
-    }
+    // Loop through posts...
+    foreach ( $posts as $post ) {
+      $post_id = (int) $post['ID'];
 
-    foreach ( $chapters as $chapter ) {
-      $word_count += fictioneer_get_word_count( $chapter->ID );
-      $comment_count += $chapter->comment_count;
+      // Check if hidden
+      $is_hidden = ! empty( $post['story_hidden'] ) && $post['story_hidden'] !== '0';
+      $is_chapter_hidden = ! empty( $post['chapter_hidden'] ) && $post['chapter_hidden'] !== '0';
+      $is_non_chapter = ! empty( $post['chapter_no_chapter'] ) && $post['chapter_no_chapter'] !== '0';
+
+      // Count valid items
+      if ( $post['post_type'] === 'fcn_story' && ! $is_hidden ) {
+        $story_count++;
+      } elseif ( $post['post_type'] === 'fcn_chapter' && ! $is_chapter_hidden && ! $is_non_chapter ) {
+        $chapter_count++;
+        $comment_count += (int) $post['comment_count'];
+      }
+
+      // Apply filters and sum word count
+      if ( ! $is_hidden && ! $is_chapter_hidden && ! $is_non_chapter ) {
+        $word_count += fictioneer_get_word_count( $post_id, max( 0, intval( $post['word_count'] ) ) );
+      }
     }
 
     // Prepare results
     $result = array(
-      'story_count' => count( $stories ),
-      'chapter_count' => count( $chapters ),
+      'story_count' => $story_count,
+      'chapter_count' => $chapter_count,
       'word_count' => $word_count,
       'word_count_short' => fictioneer_shorten_number( $word_count ),
       'valid_until' => time() + HOUR_IN_SECONDS,
       'comment_count' => $comment_count
     );
 
-    // Update meta cache
-    if ( ! $cache_plugin_active ) {
-      fictioneer_update_user_meta( $author_id, 'fictioneer_author_statistics', $result );
+    // Update meta cache and return
+    if ( FICTIONEER_ENABLE_AUTHOR_STATS_META_CACHE ) {
+      update_user_meta( $author_id, 'fictioneer_author_statistics', $result );
     }
 
-    // Done
     return $result;
   }
 }
@@ -905,9 +884,10 @@ if ( ! function_exists( 'fictioneer_get_collection_statistics' ) ) {
 
 if ( ! function_exists( 'fictioneer_shorten_number' ) ) {
   /**
-   * Shortens a number to a fractional with a letter
+   * Shorten a number to a fractional with a letter.
    *
    * @since 4.5.0
+   * @since 5.27.4 - Localize numbers and made letters translatable.
    *
    * @param int $number     The number to be shortened.
    * @param int $precision  Precision of the fraction. Default 1.
@@ -922,11 +902,20 @@ if ( ! function_exists( 'fictioneer_shorten_number' ) ) {
     if ( $number < 1000 ) {
       return strval( $number );
     } else if ( $number < 1000000 ) {
-      return number_format( $number / 1000, $precision ) . ' K';
+      return sprintf(
+        _x( '%s K', 'Abbreviation for thousand, separated by HAIR SPACE (&hairsp;).', 'fictioneer' ),
+        number_format_i18n( $number / 1000, $precision )
+      );
     } else if ( $number < 1000000000 ) {
-      return number_format( $number / 1000000, $precision ) . ' M';
+      return sprintf(
+        _x( '%s M', 'Abbreviation for million, separated by HAIR SPACE (&hairsp;).', 'fictioneer' ),
+        number_format_i18n( $number / 1000000, $precision )
+      );
     } else {
-      return number_format( $number / 1000000000, $precision ) . ' B';
+      return sprintf(
+        _x( '%s B', 'Abbreviation for billion, separated by HAIR SPACE (&hairsp;).', 'fictioneer' ),
+        number_format_i18n( $number / 1000000000, $precision )
+      );
     }
   }
 }
@@ -1288,16 +1277,18 @@ if ( ! function_exists( 'fictioneer_get_word_count' ) ) {
    * @since 5.9.4 - Add logic for optional multiplier.
    * @since 5.22.3 - Moved multiplier to fictioneer_multiply_word_count()
    * @since 5.23.1 - Added filter and additional sanitization.
+   * @since 5.27.4 - Added $word_count parameter.
    *
-   * @param int $post_id  Optional. The ID of the post the field belongs to.
-   *                      Defaults to current post ID.
+   * @param int|null $post_id     Optional. The ID of the post the field belongs to.
+   *                              Defaults to current post ID.
+   * @param int|null $word_count  Optional. Prepared word count for custom SQL solutions.
    *
    * @return int The word count or 0.
    */
 
-  function fictioneer_get_word_count( $post_id = null ) {
+  function fictioneer_get_word_count( $post_id = null, $word_count = null ) {
     // Get word count
-    $words = get_post_meta( $post_id ?? get_the_ID(), '_word_count', true ) ?: 0;
+    $words = $word_count ?? get_post_meta( $post_id ?? get_the_ID(), '_word_count', true ) ?: 0;
     $words = max( 0, intval( $words ) );
 
     // Filter
@@ -1314,15 +1305,17 @@ if ( ! function_exists( 'fictioneer_get_story_word_count' ) ) {
    *
    * @since 5.22.3
    * @since 5.23.1 - Added filter and additional sanitization.
+   * @since 5.27.4 - Added $word_count parameter.
    *
-   * @param int $post_id  Post ID of the story.
+   * @param int|null $post_id     Optional. Post ID of the story.
+   * @param int|null $word_count  Optional. Prepared word count for custom SQL solutions.
    *
    * @return int The word count or 0.
    */
 
-  function fictioneer_get_story_word_count( $post_id = null ) {
+  function fictioneer_get_story_word_count( $post_id = null, $word_count = null ) {
     // Get word count
-    $words = get_post_meta( $post_id, 'fictioneer_story_total_word_count', true ) ?: 0;
+    $words = $word_count ?? get_post_meta( $post_id, 'fictioneer_story_total_word_count', true ) ?: 0;
     $words = max( 0, intval( $words ) );
 
     // Filter
@@ -1956,14 +1949,15 @@ function fictioneer_sanitize_selection( $value, $allowed_options, $default = nul
  * Sanitizes a CSS string
  *
  * @since 5.7.4
+ * @since 5.27.4 - Unslash string.
  *
- * @param string $css  The CSS string to be sanitized.
+ * @param string $css  The CSS string to be sanitized. Expects slashed string.
  *
  * @return string The sanitized string.
  */
 
 function fictioneer_sanitize_css( $css ) {
-  $css = sanitize_textarea_field( $css );
+  $css = sanitize_textarea_field( wp_unslash( $css ) );
   $css = preg_match( '/<\/?\w+/', $css ) ? '' : $css;
 
   $opening_braces = substr_count( $css, '{' );
@@ -3518,12 +3512,29 @@ function fictioneer_get_post_patreon_data( $post = null ) {
   $global_tiers = get_option( 'fictioneer_patreon_global_lock_tiers', [] ) ?: [];
   $global_amount_cents = get_option( 'fictioneer_patreon_global_lock_amount', 0 ) ?: 0;
   $global_lifetime_amount_cents = get_option( 'fictioneer_patreon_global_lock_lifetime_amount', 0 ) ?: 0;
+
   $post_tiers = get_post_meta( $post_id, 'fictioneer_patreon_lock_tiers', true );
   $post_tiers = is_array( $post_tiers ) ? $post_tiers : [];
   $post_amount_cents = absint( get_post_meta( $post_id, 'fictioneer_patreon_lock_amount', true ) );
-  $check_tiers = array_merge( $global_tiers, $post_tiers );
+
+  $parent_tiers = [];
+  $parent_amount_cents = 0;
+
+  if ( $post->post_type === 'fcn_chapter' ) {
+    $parent_id = fictioneer_get_chapter_story_id( $post_id );
+
+    if ( $parent_id && get_post_meta( $parent_id, 'fictioneer_patreon_inheritance', true ) ) {
+      $parent_tiers = get_post_meta( $parent_id, 'fictioneer_patreon_lock_tiers', true );
+      $parent_tiers = is_array( $parent_tiers ) ? $parent_tiers : [];
+      $parent_amount_cents = absint( get_post_meta( $parent_id, 'fictioneer_patreon_lock_amount', true ) );
+    }
+  }
+
+  $check_tiers = array_merge( $global_tiers, $parent_tiers, $post_tiers );
   $check_tiers = array_unique( $check_tiers );
-  $check_amount_cents = $post_amount_cents > 0 ? $post_amount_cents : $global_amount_cents;
+
+  $check_amount_cents = $post_amount_cents > 0 ? $post_amount_cents : $parent_amount_cents;
+  $check_amount_cents = $check_amount_cents > 0 ? $check_amount_cents : $global_amount_cents;
   $check_amount_cents = $post_amount_cents > 0 && $global_amount_cents > 0
     ? min( $post_amount_cents, $global_amount_cents ) : $check_amount_cents;
   $check_amount_cents = max( $check_amount_cents, 0 );
@@ -3855,7 +3866,7 @@ function fictioneer_get_log_hash() {
 }
 
 /**
- * Logs a message to the theme log file
+ * Log a message to the theme log file.
  *
  * @since 5.0.0
  *
@@ -3919,7 +3930,9 @@ function fictioneer_log( $message, $current_user = null ) {
 }
 
 /**
- * Retrieves the log entries and returns an HTML representation
+ * Retrieve the log entries and returns an HTML representation.
+ *
+ * @since 5.0.0
  *
  * @return string The HTML representation of the log entries.
  */
@@ -3957,7 +3970,9 @@ function fictioneer_get_log() {
 }
 
 /**
- * Retrieves the debug log entries and returns an HTML representation
+ * Retrieve the debug log entries and returns an HTML representation.
+ *
+ * @since 5.0.0
  *
  * @return string The HTML representation of the log entries.
  */

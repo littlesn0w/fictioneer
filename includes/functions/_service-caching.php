@@ -52,7 +52,7 @@ if ( ! function_exists( 'fictioneer_caching_active' ) ) {
    *
    * @since 4.0.0
    *
-   * @param string|null $context  Context of the check. Currently unused.
+   * @param string|null $context  Optional. Context of the check.
    *
    * @return boolean Either true (active) or false (inactive or not installed).
    */
@@ -60,7 +60,7 @@ if ( ! function_exists( 'fictioneer_caching_active' ) ) {
   function fictioneer_caching_active( $context = null ) {
     // Check early
     if ( get_option( 'fictioneer_enable_cache_compatibility' ) ) {
-      return true;
+      return apply_filters( 'fictioneer_filter_caching_active', true, $context, true );
     }
 
     // Check active plugins
@@ -68,7 +68,7 @@ if ( ! function_exists( 'fictioneer_caching_active' ) ) {
     $active_cache_plugins = array_intersect( $active_plugins, array_keys( FICTIONEER_KNOWN_CACHE_PLUGINS ) );
 
     // Any cache plugins active?
-    return ! empty( $active_cache_plugins );
+    return apply_filters( 'fictioneer_filter_caching_active', ! empty( $active_cache_plugins ), $context, false );
   }
 }
 
@@ -142,11 +142,8 @@ function fictioneer_enable_shortcode_transients( $shortcode = null ) {
 /**
  * Whether to enable Transients for story chapter lists.
  *
- * Note: By default true unless there is a known cache plugin
- * active or the Transients are turned off by option. They are
- * always disabled in the Customizer preview.
- *
  * @since 5.25.0
+ * @since 5.27.4 - Does no longer consider cache plugins.
  *
  * @param int $post_id  Post ID of the story.
  *
@@ -158,10 +155,11 @@ function fictioneer_enable_chapter_list_transients( $post_id ) {
     return false;
   }
 
-  $bool = ! fictioneer_caching_active( 'story_chapter_list' ) &&
-    ! get_option( 'fictioneer_disable_chapter_list_transients' );
-
-  return apply_filters( 'fictioneer_filter_enable_chapter_list_transients', $bool, $post_id );
+  return apply_filters(
+    'fictioneer_filter_enable_chapter_list_transients',
+    ! get_option( 'fictioneer_disable_chapter_list_transients' ),
+    $post_id
+  );
 }
 
 /**

@@ -5,9 +5,9 @@
 // =============================================================================
 
 // Version
-define( 'FICTIONEER_VERSION', '5.27.3' );
+define( 'FICTIONEER_VERSION', '5.27.4' );
 define( 'FICTIONEER_MAJOR_VERSION', '5' );
-define( 'FICTIONEER_RELEASE_TAG', 'v5.27.3' );
+define( 'FICTIONEER_RELEASE_TAG', 'v5.27.4' );
 
 if ( ! defined( 'CHILD_VERSION' ) ) {
   define( 'CHILD_VERSION', null );
@@ -401,6 +401,16 @@ if ( ! defined( 'FICTIONEER_ENABLE_STICKY_CARDS' ) ) {
 // Boolean: Enable story data meta cache
 if ( ! defined( 'FICTIONEER_ENABLE_STORY_DATA_META_CACHE' ) ) {
   define( 'FICTIONEER_ENABLE_STORY_DATA_META_CACHE', true );
+}
+
+// Boolean: Enable chapter index meta cache
+if ( ! defined( 'FICTIONEER_ENABLE_CHAPTER_INDEX_META_CACHE' ) ) {
+  define( 'FICTIONEER_ENABLE_CHAPTER_INDEX_META_CACHE', true );
+}
+
+// Boolean: Enable author statistics meta cache
+if ( ! defined( 'FICTIONEER_ENABLE_AUTHOR_STATS_META_CACHE' ) ) {
+  define( 'FICTIONEER_ENABLE_AUTHOR_STATS_META_CACHE', true );
 }
 
 // Boolean: Order stories by last updated chapter timestamp
