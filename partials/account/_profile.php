@@ -213,3 +213,39 @@ $renaming_disabled = $current_user->fictioneer_admin_disable_renaming;
   </div>
 
 </form>
+
+<?php if (isset($_GET['badge_updated'])) : ?>
+    <?php 
+        wp_safe_redirect(
+    add_query_arg(
+      array(
+        'fictioneer-notice' => __( 'Badge updated.', 'fictioneer' ),
+        'success' => 1
+      ),
+      wp_get_referer() . '#badge'
+    )
+  );
+     ?>
+<?php endif; ?>
+<?php
+$custom_badge_name = get_user_meta($current_user->ID, 'fictioneer_badge_name', true);
+$custom_badge_color = get_user_meta($current_user->ID, 'fictioneer_badge_color', true) ?: '#505062';
+$allowed_roles = get_option('fictioneer_allowed_roles', []);
+$allowed_roles = is_array($allowed_roles) ? $allowed_roles : []; // Ensure it's an array
+?>
+<?php
+if ( array_intersect($allowed_roles, $current_user->roles) ) {?>
+    <h3 id="profile" class="profile__account-headline"><?php _e( 'Custom Badge', 'fictioneer' ); ?></h3>
+    <form method="post" id="badge">
+        <?php wp_nonce_field('fictioneer_update_badge', 'fictioneer_badge_nonce'); ?>
+        <div class="profile__input-label">Badge Name</div>
+        <input type="text" name="fictioneer_badge_name" id="fictioneer_badge_name" value="<?php echo esc_attr($custom_badge_name); ?>" placeholder="Supporter">
+        <label for="fictioneer_badge_coloris" class="profile__input-label">Badge Color</label>
+        <input type="text" name="fictioneer_badge_color" id="fictioneer_badge_color" value="<?php echo esc_attr($custom_badge_color); ?>" data-coloris>
+        <input type="hidden" name="fictioneer_badge_update" value="1">
+        
+        <button type="submit" class="button profile__actions" style="margin-top: 0.5rem;">Save Badge</button>            
+    </form>
+<?php        
+}
+?>
