@@ -62,13 +62,13 @@ function fictioneer_validate_save_action_user( $post_id, $post_type ) {
 // =============================================================================
 
 /**
- * Sanitizes editor content
+ * Sanitize editor content.
  *
- * Removes malicious HTML, shortcodes, and blocks.
+ * Removes malicious HTML, magic quote slashes, shortcodes, and blocks.
  *
  * @since 5.7.4
  *
- * @param string $content  The content to be sanitized
+ * @param string $content  The content to be sanitized.
  *
  * @return string The sanitized content.
  */
@@ -84,6 +84,18 @@ function fictioneer_sanitize_editor( $content ) {
 // =============================================================================
 // META FIELD HELPERS
 // =============================================================================
+
+/**
+ * Return HTML for hidden input to test whether magic quotes were applied.
+ *
+ * @since 5.28.0
+ *
+ * @return string The HTML markup for the field.
+ */
+
+function fictioneer_get_magic_quote_test() {
+  return '<input type="hidden" name="fictioneer_magic_quotes_test" value="' . "O'Reilly" . '">';
+}
 
 /**
  * Returns HTML for a checkbox meta field
@@ -1909,6 +1921,8 @@ function fictioneer_render_story_meta_metabox( $post ) {
 
   // --- Add fields ------------------------------------------------------------
 
+  $output['fictioneer_magic_quote_test'] = fictioneer_get_magic_quote_test();
+
   $output['fictioneer_story_status'] = fictioneer_get_metabox_select(
     $post,
     'fictioneer_story_status',
@@ -2105,6 +2119,9 @@ function fictioneer_render_story_data_metabox( $post ) {
 
   // --- Add fields ------------------------------------------------------------
 
+  // Magic quote test
+  $output['fictioneer_magic_quote_test'] = fictioneer_get_magic_quote_test();
+
   // Short description
   $output['fictioneer_story_short_description'] = fictioneer_get_metabox_editor(
     $post,
@@ -2235,6 +2252,9 @@ function fictioneer_render_story_epub_metabox( $post ) {
   $output = [];
 
   // --- Add fields ------------------------------------------------------------
+
+  // Magic quote test
+  $output['fictioneer_magic_quote_test'] = fictioneer_get_magic_quote_test();
 
   // Custom upload
   if ( current_user_can( 'fcn_custom_epub_upload', $post->ID ) ) {
@@ -2557,6 +2577,8 @@ function fictioneer_render_chapter_meta_metabox( $post ) {
 
   // --- Add fields ------------------------------------------------------------
 
+  $output['fictioneer_magic_quote_test'] = fictioneer_get_magic_quote_test();
+
   if ( ! get_option( 'fictioneer_hide_chapter_icons' ) ) {
     $output['fictioneer_chapter_icon'] = fictioneer_get_metabox_icons(
       $post,
@@ -2734,6 +2756,9 @@ function fictioneer_render_chapter_data_metabox( $post ) {
   $output = [];
 
   // --- Add fields ------------------------------------------------------------
+
+  // Magic quote test
+  $output['fictioneer_magic_quote_test'] = fictioneer_get_magic_quote_test();
 
   // Story
   $story_selection = fictioneer_sql_get_chapter_story_selection( $post_author_id, $current_story_id );
@@ -3107,6 +3132,9 @@ function fictioneer_render_extra_metabox( $post ) {
   $author_id = $post->post_author ?: get_current_user_id();
 
   // --- Add fields ------------------------------------------------------------
+
+  // Magic quote test
+  $output['fictioneer_magic_quote_test'] = fictioneer_get_magic_quote_test();
 
   // Landscape image
   $output['fictioneer_landscape_image'] = fictioneer_get_metabox_image(
@@ -3559,6 +3587,8 @@ function fictioneer_render_support_links_metabox( $post ) {
 
   // --- Add fields --------------------------------------------------------------
 
+  $output['fictioneer_magic_quote_test'] = fictioneer_get_magic_quote_test();
+
   $output['fictioneer_patreon_link'] = fictioneer_get_metabox_url(
     $post,
     'fictioneer_patreon_link',
@@ -3720,6 +3750,9 @@ function fictioneer_render_featured_content_metabox( $post ) {
   $output = [];
 
   // --- Add fields --------------------------------------------------------------
+
+  // Magic quote test
+  $output['fictioneer_magic_quote_test'] = fictioneer_get_magic_quote_test();
 
   // Featured items
   $item_ids = get_post_meta( $post->ID, 'fictioneer_post_featured', true ) ?: [];
@@ -3903,6 +3936,9 @@ function fictioneer_render_collection_data_metabox( $post ) {
 
   // --- Add fields --------------------------------------------------------------
 
+  // Magic quote test
+  $output['fictioneer_magic_quote_test'] = fictioneer_get_magic_quote_test();
+
   // Card/List title
   $output['fictioneer_collection_list_title'] = fictioneer_get_metabox_text(
     $post,
@@ -4065,6 +4101,9 @@ function fictioneer_render_recommendation_data_metabox( $post ) {
   $output = [];
 
   // --- Add fields --------------------------------------------------------------
+
+  // Magic quote test
+  $output['fictioneer_magic_quote_test'] = fictioneer_get_magic_quote_test();
 
   // One sentence
   $output['fictioneer_recommendation_one_sentence'] = fictioneer_get_metabox_text(

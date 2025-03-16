@@ -1,7 +1,7 @@
 <p align="center"><img src="./repo/assets/fictioneer_logo.svg?raw=true" alt="Fictioneer"></p>
 
 <p align="center">
-  <a href="https://github.com/Tetrakern/fictioneer"><img alt="Theme: 5.27" src="https://img.shields.io/badge/theme-5.27-blue?style=flat" /></a>
+  <a href="https://github.com/Tetrakern/fictioneer"><img alt="Theme: 5.28" src="https://img.shields.io/badge/theme-5.28-blue?style=flat" /></a>
   <a href="LICENSE.md"><img alt="License: GPL v3" src="https://img.shields.io/badge/license-GPL%20v3-blue?style=flat" /></a>
   <a href="https://wordpress.org/download/"><img alt="WordPress 6.5+" src="https://img.shields.io/badge/WordPress-%3E%3D6.5-blue?style=flat" /></a>
   <a href="https://www.php.net/"><img alt="PHP: 7.4+" src="https://img.shields.io/badge/php-%3E%3D7.4-blue?logoColor=white&style=flat" /></a>
@@ -40,6 +40,8 @@ Migrating an existing WordPress database can be a downright nightmare. Depending
 
 * [Base child theme](https://github.com/Tetrakern/fictioneer-child-theme)
 * [Minimalist child theme](https://github.com/Tetrakern/fictioneer-minimalist)
+* [Action reference](ACTIONS.md)
+* [Filter reference](FILTERS.md)
 * [CSS snippets](INSTALLATION.md#css-snippets)
 * [PHP action & filter snippets](CUSTOMIZE.md)
 

@@ -5,7 +5,7 @@
 // =============================================================================
 
 /**
- * Fixes redirect after posting a comment
+ * Fix redirect after posting a comment.
  *
  * Due to the modified query, after posting a comment, the commenter may be
  * redirected to the wrong comment page. This resolves the issue and also adds
@@ -488,20 +488,23 @@ if ( ! function_exists( 'fictioneer_unsubscribe_from_comment' ) ) {
    * @since 5.0.0
    * @link https://developer.wordpress.org/rest-api/extending-the-rest-api/adding-custom-endpoints/
    *
-   * @param WP_REST_Request $WP_REST_Request  Request object.
+   * @param WP_REST_Request $request  Request object.
    */
 
-  function fictioneer_unsubscribe_from_comment( WP_REST_Request $data ) {
+  function fictioneer_unsubscribe_from_comment( WP_REST_Request $request ) {
     header( "Content-Type: text/html" );
 
+    // Cache plugins
+    do_action( 'litespeed_control_set_nocache', 'no-cache for unsubscribe api endpoint' );
+
     // Setup
-    $comment_id = absint( $data['id'] );
-    $code = $data->get_param( 'code' );
+    $comment_id = absint( $request['id'] );
+    $code = $request->get_param( 'code' );
 
     // Abort if no code given
     if ( ! $code ) {
       _e( 'Invalid request!', 'fictioneer' );
-      exit();
+      exit;
     }
 
     // Find comment
@@ -510,13 +513,13 @@ if ( ! function_exists( 'fictioneer_unsubscribe_from_comment' ) ) {
     // Abort if no comment found
     if ( ! $comment ) {
       _e( 'Invalid request!', 'fictioneer' );
-      exit();
+      exit;
     }
 
     // Abort if already unsubscribed
     if ( ! get_comment_meta( $comment->comment_ID, 'fictioneer_send_notifications', true ) ) {
       _e( 'Already unsubscribed!', 'fictioneer' );
-      exit();
+      exit;
     }
 
     // Unsubscribe if code matches
@@ -566,4 +569,32 @@ function fictioneer_comment_edit( $comment_ID, $data ) {
 
 if ( ! get_option( 'fictioneer_disable_comment_form' ) ) {
   add_action( 'edit_comment', 'fictioneer_comment_edit', 20, 2 );
+}
+
+// =============================================================================
+// COMMENTING ON SCHEDULED (FUTURE) POSTS
+// =============================================================================
+
+/**
+ * Allow commenting on scheduled posts for logged-in users.
+ *
+ * @since 4.28.0
+ */
+
+if ( get_option( 'fictioneer_enable_scheduled_chapter_commenting' ) && is_user_logged_in() ) {
+  if ( $_SERVER['REQUEST_METHOD'] === 'POST' && ! empty( $_POST['comment_post_ID'] ) ) {
+    $comment_post = get_post( (int) $_POST['comment_post_ID'] );
+
+    if ( $comment_post && $comment_post->post_status === 'future' ) {
+      add_filter( 'get_post_status', 'fictioneer__return_publish_status' );
+    }
+  }
+
+  $remove_filter_function = function() {
+    remove_filter( 'get_post_status', 'fictioneer__return_publish_status' );
+  };
+
+  foreach ( [ 'wp_insert_comment', 'wp', 'pre_get_posts' ] as $hook ) {
+    add_action( $hook, $remove_filter_function, 1 );
+  }
 }

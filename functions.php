@@ -5,9 +5,9 @@
 // =============================================================================
 
 // Version
-define( 'FICTIONEER_VERSION', '5.27.4' );
+define( 'FICTIONEER_VERSION', '5.28.1' );
 define( 'FICTIONEER_MAJOR_VERSION', '5' );
-define( 'FICTIONEER_RELEASE_TAG', 'v5.27.4' );
+define( 'FICTIONEER_RELEASE_TAG', 'v5.28.1' );
 
 if ( ! defined( 'CHILD_VERSION' ) ) {
   define( 'CHILD_VERSION', null );
@@ -243,7 +243,7 @@ if ( ! defined( 'FICTIONEER_API_STORYGRAPH_CACHE_TTL' ) ) {
 
 // Integer: Storygraph API number of stories per page
 if ( ! defined( 'FICTIONEER_API_STORYGRAPH_STORIES_PER_PAGE' ) ) {
-  define( 'FICTIONEER_API_STORYGRAPH_STORIES_PER_PAGE', 10 );
+  define( 'FICTIONEER_API_STORYGRAPH_STORIES_PER_PAGE', 25 );
 }
 
 // Integer: Maximum number of displayed custom pages
@@ -301,21 +301,6 @@ if ( ! defined( 'FICTIONEER_CARD_CACHE_EXPIRATION_TIME' ) ) {
 // Integer: Maximum number of chapters shown on story cards
 if ( ! defined( 'FICTIONEER_STORY_CARD_CHAPTER_LIMIT' ) ) {
   define( 'FICTIONEER_STORY_CARD_CHAPTER_LIMIT', 3 );
-}
-
-// Integer: Count of the query results required to be eligible for caching
-if ( ! defined( 'FICTIONEER_QUERY_RESULT_CACHE_THRESHOLD' ) ) {
-  define( 'FICTIONEER_QUERY_RESULT_CACHE_THRESHOLD', 50 );
-}
-
-// Integer: Maximum query results cached as Transients
-if ( ! defined( 'FICTIONEER_QUERY_RESULT_CACHE_LIMIT' ) ) {
-  define( 'FICTIONEER_QUERY_RESULT_CACHE_LIMIT', 50 );
-}
-
-// Integer: Limit the number of large query result cache uploads per request
-if ( ! defined( 'FICTIONEER_QUERY_RESULT_CACHE_BREAK' ) ) {
-  define( 'FICTIONEER_QUERY_RESULT_CACHE_BREAK', 3 );
 }
 
 // Integer: OAuth login cookie lifetime
@@ -388,11 +373,6 @@ if ( ! defined( 'FICTIONEER_API_STORYGRAPH_HOTLINK' ) ) {
   define( 'FICTIONEER_API_STORYGRAPH_HOTLINK', false );
 }
 
-// Boolean: Storygraph API with chapters in /stories
-if ( ! defined( 'FICTIONEER_API_STORYGRAPH_CHAPTERS' ) ) {
-  define( 'FICTIONEER_API_STORYGRAPH_CHAPTERS', true );
-}
-
 // Boolean: Enable sticky cards
 if ( ! defined( 'FICTIONEER_ENABLE_STICKY_CARDS' ) ) {
   define( 'FICTIONEER_ENABLE_STICKY_CARDS', true );
@@ -451,7 +431,10 @@ if ( ! defined( 'FICTIONEER_ENABLE_MENU_TRANSIENTS' ) ) {
 
 // Boolean: Whether to show scheduled chapters in lists
 if ( ! defined( 'FICTIONEER_LIST_SCHEDULED_CHAPTERS' ) ) {
-  define( 'FICTIONEER_LIST_SCHEDULED_CHAPTERS', false );
+  define(
+    'FICTIONEER_LIST_SCHEDULED_CHAPTERS',
+    get_option( 'fictioneer_show_scheduled_chapters' ) ? true : false
+  );
 }
 
 // Boolean: Whether to enable all author profile pages

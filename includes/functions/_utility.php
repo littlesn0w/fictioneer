@@ -1549,6 +1549,11 @@ if ( ! function_exists( 'fictioneer_bulk_update_post_meta' ) ) {
 
     global $wpdb;
 
+    // Deal with magic quotes
+    if ( fictioneer_has_magic_quotes() ) {
+      $fields = array_map( 'wp_unslash', $fields );
+    }
+
     // Setup
     $existing_meta = [];
     $update_parts = [];
@@ -1834,7 +1839,7 @@ function fictioneer_sanitize_integer( $value, $default = 0, $min = null, $max = 
 // =============================================================================
 
 /**
- * Sanitizes a float as positive number
+ * Sanitizes a float as positive number.
  *
  * @since 5.9.4
  *
@@ -1858,7 +1863,7 @@ function fictioneer_sanitize_positive_float( $value, $default = 0.0 ) {
 }
 
 /**
- * Sanitize callback with positive float or default 1.0
+ * Sanitize callback with positive float or default 1.0.
  *
  * @since 5.10.1
  *
@@ -1878,7 +1883,7 @@ function fictioneer_sanitize_positive_float_def1( $value ) {
 }
 
 /**
- * Sanitize callback with float or default 0
+ * Sanitize callback with float or default 0.
  *
  * @since 5.19.0
  *
@@ -1902,7 +1907,7 @@ function fictioneer_sanitize_float( $value ) {
 // =============================================================================
 
 /**
- * Sanitizes a checkbox value into true or false
+ * Sanitize a checkbox value into true or false.
  *
  * @since 4.7.0
  * @link https://www.php.net/manual/en/function.filter-var.php
@@ -1923,7 +1928,7 @@ function fictioneer_sanitize_checkbox( $value ) {
 // =============================================================================
 
 /**
- * Sanitizes a selected option
+ * Sanitize a selected option.
  *
  * @since 5.7.4
  *
@@ -1946,7 +1951,7 @@ function fictioneer_sanitize_selection( $value, $allowed_options, $default = nul
 // =============================================================================
 
 /**
- * Sanitizes a CSS string
+ * Sanitize a CSS string.
  *
  * @since 5.7.4
  * @since 5.27.4 - Unslash string.
@@ -2705,7 +2710,7 @@ if ( ! function_exists( 'fictioneer_get_font_colors' ) ) {
 // =============================================================================
 
 /**
- * Explodes string into an array
+ * Explode string into an array.
  *
  * Strips lines breaks, trims whitespaces, and removes empty elements.
  * Values might not be unique.
@@ -3314,6 +3319,22 @@ function fictioneer__return_no_format() {
 }
 
 // =============================================================================
+// RETURN PUBLISH STRING
+// =============================================================================
+
+/**
+ * Helper to just return 'publish'.
+ *
+ * @since 4.28.0
+ *
+ * @return string Just a simple 'publish'.
+ */
+
+function fictioneer__return_publish_status( $param = null ) {
+  return 'publish';
+}
+
+// =============================================================================
 // TRUNCATE STRING
 // =============================================================================
 
@@ -3497,11 +3518,12 @@ function fictioneer_get_post_patreon_data( $post = null ) {
 
   // Post?
   $post = $post ?? get_post();
-  $post_id = $post->ID;
 
   if ( ! $post ) {
     return null;
   }
+
+  $post_id = $post->ID;
 
   // Check cache
   if ( isset( $cache[ $post_id ] ) ) {
@@ -4006,4 +4028,67 @@ function fictioneer_get_wp_debug_log() {
 
   // Return HTML
   return '<ul class="fictioneer-log _wp-debug-log">' . $output . '</ul>';
+}
+
+// =============================================================================
+// MAGIC QUOTES & UNSLASH
+// =============================================================================
+
+/**
+ * Check for magic quotes indicator field.
+ *
+ * Looks in `$_POST['fictioneer_magic_quotes_test']` (or a different key) for
+ * an indicator string that may have magic quotes applied. This requires to have
+ * a hidden input with a telling string in the submission, such as `O'Reilly`,
+ * which would become `O\'Reilly`.
+ *
+ * @since 5.28.0
+ *
+ * @param string $key  Key for the super global. Default 'fictioneer_magic_quotes_test'.
+ *
+ * @return null|bool Null if the indicator field is missing, otherwise true if
+ *                   magic quotes were found and false if not.
+ */
+
+function fictioneer_has_magic_quotes( $key = 'fictioneer_magic_quotes_test' ) {
+  static $result = null;
+
+  if ( $result !== null ) {
+    return $result;
+  }
+
+  if ( ! isset( $_POST[ $key ] ) ) {
+    return null; // Unknown
+  }
+
+  if ( preg_match( '/\\\\[\'"\\\\]/', $_POST[ $key ] ?? '' ) === 1 ) {
+    $result = true;
+
+    return true;
+  }
+
+  $result = false;
+
+  return false;
+}
+
+/**
+ * Unslash data if there are magic quotes
+ *
+ * Note: Relies on the presence of an indicator string in `$_POST`,
+ * otherwise wp_unslash() will not be applied.
+ *
+ * @since 5.28.0
+ *
+ * @param string|array $data  The data to maybe unslash.
+ *
+ * @return string|array Unslashed or unchanged data.
+ */
+
+function fictioneer_maybe_unslash( $data ) {
+  if ( fictioneer_has_magic_quotes() ) {
+    return wp_unslash( $data );
+  }
+
+  return $data;
 }

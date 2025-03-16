@@ -107,6 +107,8 @@ if ( ! function_exists( 'fictioneer_seo_fields' ) ) {
     // Start HTML ---> ?>
     <div class="fictioneer-metabox">
 
+      <?php echo fictioneer_get_magic_quote_test(); ?>
+
       <input type="hidden" name="fictioneer_metabox_seo_nonce" value="<?php echo wp_create_nonce( 'fictioneer-metabox-seo-save' ); ?>">
 
       <p class="description"><?php _ex( 'Metadata for search engine results, schema graphs, and social media embeds. If left blank, defaults will be derived from the content. You can use <code>{{title}}</code>, <code>{{site}}</code>, and <code>{{excerpt}}</code> as placeholders. Whether these services actually display the offered data is entirely up to them.', 'Do not translate {{title}}, {{site}}, and {{excerpt}}.', 'fictioneer' ); ?></p>
@@ -194,12 +196,12 @@ function fictioneer_save_seo_metabox( $post_id ) {
 
   // Get title
   if ( isset( $_POST['fictioneer_seo_title'] ) ) {
-    $seo_data['title'] = sanitize_text_field( $_POST['fictioneer_seo_title'] );
+    $seo_data['title'] = sanitize_text_field( fictioneer_maybe_unslash( $_POST['fictioneer_seo_title'] ) );
   }
 
   // Get description
   if ( isset( $_POST['fictioneer_seo_description'] ) ) {
-    $seo_data['description'] = sanitize_text_field( $_POST['fictioneer_seo_description'] );
+    $seo_data['description'] = sanitize_text_field( fictioneer_maybe_unslash( $_POST['fictioneer_seo_description'] ) );
   }
 
   // Let empty fields get deleted
@@ -723,13 +725,13 @@ function fictioneer_output_head_seo() {
   }
 
   // Start HTML ---> ?>
-  <link rel="canonical" href="<?php echo $canonical_url; ?>">
+  <link rel="canonical" href="<?php echo $canonical_url ? $canonical_url : get_permalink(); ?>">
   <meta name="description" content="<?php echo $og_description; ?>">
   <meta property="og:locale" content="<?php echo get_locale(); ?>">
   <meta property="og:type" content="<?php echo $og_type; ?>">
   <meta property="og:title" content="<?php echo $og_title; ?>">
   <meta property="og:description" content="<?php echo $og_description; ?>">
-  <meta property="og:url" content="<?php echo $canonical_url; ?>">
+  <meta property="og:url" content="<?php echo $canonical_url ? $canonical_url : get_permalink(); ?>">
   <meta property="og:site_name" content="<?php echo get_bloginfo( 'name' ); ?>">
 
   <?php if ( ! $is_aggregated && $is_article ) : ?>

@@ -597,7 +597,7 @@ function fictioneer_password_form() {
   $label = 'pwbox-' . ( empty( $post->ID ) ? rand() : $post->ID . '-' . rand() );
 
   // Default password form
-  $form = '<form class="post-password-form" action="' . esc_url( site_url( 'wp-login.php?action=postpass', 'login_post' ) ) . '" method="post"><div><i class="fa-solid fa-lock icon-password-form"></i><div class="password-wrapper"><input name="post_password" id="' . $label . '" type="password" required size="20" placeholder="' . esc_attr__( 'Password', 'fictioneer' ) . '"></div><div class="password-submit"><input type="submit" name="Submit" value="' . esc_attr__( 'Unlock', 'fictioneer' ) . '" /><input type="hidden" name="_wp_http_referer" value="' . esc_attr( wp_unslash( $_SERVER['REQUEST_URI'] ) ) . '"></div></div></form>';
+  $form = '<form class="post-password-form" action="' . esc_url( site_url( 'wp-login.php?action=postpass', 'login_post' ) ) . '" method="post"><div><i class="fa-solid fa-lock icon-password-form"></i><div class="password-wrapper"><input name="post_password" id="' . $label . '" type="password" required size="20" placeholder="' . esc_attr__( 'Password', 'fictioneer' ) . '"></div><div class="password-submit"><input type="submit" name="Submit" value="' . esc_attr__( 'Unlock', 'fictioneer' ) . '" /><input type="hidden" name="_wp_http_referer" value="' . esc_attr( $_SERVER['REQUEST_URI'] ) . '"></div></div></form>';
 
   // Continue filter
   return $form;
@@ -634,6 +634,10 @@ function fictioneer_unlock_with_patreon( $form ) {
   // Patreon data
   $patreon_post_data = fictioneer_get_post_patreon_data( $post );
   $patreon_user_data = fictioneer_get_user_patreon_data();
+
+  if ( empty( $patreon_post_data ) ) {
+    return $form;
+  }
 
   // Any tiers or amounts set up?
   if ( $patreon_post_data['gated'] ) {
@@ -1712,10 +1716,15 @@ add_action( 'send_headers', 'fictioneer_block_pages_from_indexing' );
  * Redirects scheduled chapter 404 to story or home
  *
  * @since 5.27.2
+ * @since 5.28.0 - Account for displaying of scheduled posts.
  */
 
 function fictioneer_redirect_scheduled_chapter_404() {
-  if ( current_user_can( 'manage_options' ) || current_user_can( 'edit_others_fcn_chapters' ) ) {
+  if (
+    current_user_can( 'manage_options' ) ||
+    current_user_can( 'edit_others_fcn_chapters' ) ||
+    get_option( 'fictioneer_show_scheduled_chapters' )
+  ) {
     return; // Default behavior
   }
 

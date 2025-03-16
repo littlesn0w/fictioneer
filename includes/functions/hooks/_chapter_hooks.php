@@ -738,6 +738,7 @@ add_action( 'fictioneer_chapter_after_content', 'fictioneer_chapter_support_link
  * Note: Added conditionally in the `wp` action hook (priority 10).
  *
  * @since 5.0.0
+ * @since 5.28.0 - Check whether password is required.
  *
  * @param WP_Post|null $args['story_post']           Optional. Post object of the story.
  * @param int          $args['chapter_id']           The chapter ID.
@@ -748,6 +749,10 @@ add_action( 'fictioneer_chapter_after_content', 'fictioneer_chapter_support_link
  */
 
 function fictioneer_chapter_micro_menu( $args ) {
+  if ( post_password_required() ) {
+    return;
+  }
+
   echo fictioneer_get_chapter_micro_menu( $args );
 }
 add_action( 'fictioneer_chapter_after_content', 'fictioneer_chapter_micro_menu', 99 );
@@ -757,7 +762,7 @@ add_action( 'fictioneer_chapter_after_content', 'fictioneer_chapter_micro_menu',
 // =============================================================================
 
 /**
- * Outputs the HTML for the chapter paragraph tools
+ * Output the HTML for the chapter paragraph tools.
  *
  * Note: Added conditionally in the `wp` action hook (priority 10).
  *
@@ -768,6 +773,9 @@ function fictioneer_chapter_paragraph_tools() {
   // Setup
   $can_comment = ! fictioneer_is_commenting_disabled( get_the_ID() ) && comments_open();
   $hide_if_logged_out = get_option( 'comment_registration' ) ? 'hide-if-logged-out' : ''; // Safer for cached site
+
+  $scheduled_commenting = get_post_status() !== 'future' ? true :
+    ( get_option( 'fictioneer_enable_scheduled_chapter_commenting' ) && is_user_logged_in() );
 
   // Start HTML ---> ?>
   <div id="paragraph-tools" class="paragraph-tools" data-fictioneer-chapter-target="tools" data-nosnippet>
@@ -784,13 +792,13 @@ function fictioneer_chapter_paragraph_tools() {
           </div>
         </button>
       <?php endif; ?>
-      <?php if ( $can_comment ) : ?>
+      <?php if ( $can_comment && $scheduled_commenting ) : ?>
         <button id="button-comment-stack" type="button" class="button <?php echo $hide_if_logged_out ?>" data-action="click->fictioneer-chapter#quote">
           <i class="fa-solid fa-quote-right"></i>
           <span><?php _ex( 'Quote', 'Paragraph tools quote button', 'fictioneer' ); ?></span>
         </button>
       <?php endif; ?>
-      <?php if ( $can_comment && get_option( 'fictioneer_enable_suggestions' ) ) : ?>
+      <?php if ( $can_comment && $scheduled_commenting && get_option( 'fictioneer_enable_suggestions' ) ) : ?>
         <button id="button-tools-add-suggestion" type="button" class="button <?php echo $hide_if_logged_out ?>" data-action="click->fictioneer-suggestion#toggleModalViaParagraph">
           <i class="fa-solid fa-highlighter"></i>
           <span class="hide-below-480"><?php _ex( 'Suggestion', 'Paragraph tools suggestion button', 'fictioneer' ); ?></span>
