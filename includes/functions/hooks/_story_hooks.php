@@ -506,6 +506,7 @@ add_action( 'fictioneer_story_after_content', 'fictioneer_story_pages', 42 );
  */
 
 function fictioneer_story_chapters( $args ) {
+  $limit = get_user_limit();
   // Abort conditions...
   if ( $args['password_required'] ?? post_password_required() ) {
     return;
@@ -517,10 +518,10 @@ function fictioneer_story_chapters( $args ) {
   if ( $enable_transients ) {
     $transient_cache = get_transient( 'fictioneer_story_chapter_list_html_' . $args['story_id'] );
 
-    if ( $transient_cache ) {
+    /*if ( $transient_cache ) {
       echo $transient_cache;
       return;
-    }
+    }*/
   }
 
   // Setup
@@ -558,6 +559,7 @@ function fictioneer_story_chapters( $args ) {
         $has_groups = count( $chapter_groups ) > 1 && get_option( 'fictioneer_enable_chapter_groups' );
 
         // Loop over groups (or one group for all if disabled)...
+        $chapter_iteration = 0;
         foreach ( $chapter_groups as $key => $group ) {
           $group_index++;
 
@@ -633,6 +635,10 @@ function fictioneer_story_chapters( $args ) {
                       // Icon hierarchy: password > scheduled > text > normal
                       if ( ! $prefer_chapter_icon && $chapter['password'] || $current_cat==42 ) {// will add settings in the admin panel in the future
                         $icon = '<i class="fa-solid fa-lock chapter-group__list-item-icon"></i>';
+                        $chapter_iteration++;
+                        if($chapter_iteration <= $limit){
+                           $icon = '<i class="fa-solid fa-unlock chapter-group__list-item-icon"></i>';
+                        }
                       } elseif ( ! $prefer_chapter_icon && $chapter['status'] === 'future' ) {
                         $icon = '<i class="fa-solid fa-calendar-days chapter-group__list-item-icon"></i>';
                       } elseif ( $chapter['text_icon'] ) {
