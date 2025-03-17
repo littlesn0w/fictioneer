@@ -1379,7 +1379,7 @@ function fictioneer_get_chapter_index_html( $story_id ) {
         $icon = '<i class="fa-solid fa-lock"></i>';
         $chapter_iteration++;
         if($chapter_iteration <= $limit){
-          $icon = '<i class="fa-regular fa-unlock"></i>';
+          $icon = '<i class="fa-solid fa-unlock"></i>';
         }
       } elseif ( ! $prefer_chapter_icon && $chapter->post_status === 'future' ) {
         $icon = '<i class="fa-solid fa-calendar-days"></i>';

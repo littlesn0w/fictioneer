@@ -637,7 +637,7 @@ function fictioneer_story_chapters( $args ) {
                         $icon = '<i class="fa-solid fa-lock chapter-group__list-item-icon"></i>';
                         $chapter_iteration++;
                         if($chapter_iteration <= $limit){
-                           $icon = '<i class="fa-regular fa-unlock chapter-group__list-item-icon"></i>';
+                           $icon = '<i class="fa-solid fa-unlock chapter-group__list-item-icon"></i>';
                         }
                       } elseif ( ! $prefer_chapter_icon && $chapter['status'] === 'future' ) {
                         $icon = '<i class="fa-solid fa-calendar-days chapter-group__list-item-icon"></i>';
