@@ -1294,11 +1294,30 @@ if ( ! function_exists( 'fictioneer_get_chapter_micro_menu' ) ) {
  * @return string Compiled chapter index list.
  */
 
+function get_user_limit() {
+    // Retrieve serialized data from WordPress options table
+    $rcr_settings = get_option('rcr_settings');
+    
+    // Get current user's roles
+    $current_user = wp_get_current_user();
+    $user_roles = $current_user->roles;
+    
+    // Loop through the rules
+    foreach ($rcr_settings['rules'] as $rule) {
+        if (isset($rule['role'], $rule['limit']) && in_array($rule['role'], $user_roles)) {
+            return (int) $rule['limit']; // Return the limit as an integer
+        }
+    }
+    
+    return 0; // Return null if no matching role is found
+}
+
 function fictioneer_get_chapter_index_html( $story_id ) {
+  $limit = get_user_limit();
   // Meta cache (purged on update)?
   if ( FICTIONEER_ENABLE_CHAPTER_INDEX_META_CACHE ) {
     $last_story_update = get_post_modified_time( 'U', true, $story_id );
-    $meta_cache = get_post_meta( $story_id, 'fictioneer_story_chapter_index_html', true );
+    /*$meta_cache = get_post_meta( $story_id, 'fictioneer_story_chapter_index_html', true );
 
     if ( is_array( $meta_cache ) && ( $meta_cache['html'] ?? 0 ) ) {
       // ... still up-to-date and valid?
@@ -1308,7 +1327,7 @@ function fictioneer_get_chapter_index_html( $story_id ) {
       ) {
         return $meta_cache['html'];
       }
-    }
+    }*/
   }
 
   // Setup
@@ -1322,6 +1341,7 @@ function fictioneer_get_chapter_index_html( $story_id ) {
   $position = 0;
 
   // Loop chapters...
+  $chapter_iteration = 0;
   foreach ( $chapters as $chapter ) {
     // Skip hidden chapters (in case of filtered query params)
     if (
@@ -1357,6 +1377,10 @@ function fictioneer_get_chapter_index_html( $story_id ) {
       // Icon hierarchy: password > scheduled > text > normal
       if ( ! $prefer_chapter_icon && $chapter->post_password || $current_cat==42 ) {
         $icon = '<i class="fa-solid fa-lock"></i>';
+        $chapter_iteration++;
+        if($chapter_iteration <= $limit){
+          $icon = '<i class="fa-solid fa-unlock"></i>';
+        }
       } elseif ( ! $prefer_chapter_icon && $chapter->post_status === 'future' ) {
         $icon = '<i class="fa-solid fa-calendar-days"></i>';
       } elseif ( $text_icon ) {
