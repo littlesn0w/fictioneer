@@ -518,10 +518,10 @@ function fictioneer_story_chapters( $args ) {
   if ( $enable_transients ) {
     $transient_cache = get_transient( 'fictioneer_story_chapter_list_html_' . $args['story_id'] );
 
-    /*if ( $transient_cache ) {
+    if ( $transient_cache ) {
       echo $transient_cache;
       return;
-    }*/
+    }
   }
 
   // Setup
