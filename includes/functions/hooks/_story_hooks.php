@@ -515,14 +515,14 @@ function fictioneer_story_chapters( $args ) {
   $enable_transients = fictioneer_enable_chapter_list_transients( $args['story_id'] );
 
   // Check for cached chapters output
-  /*if ( $enable_transients ) {
+  if ( $enable_transients ) {
     $transient_cache = get_transient( 'fictioneer_story_chapter_list_html_' . $args['story_id'] );
 
-    if ( $transient_cache ) {
+    /*if ( $transient_cache ) {
       echo $transient_cache;
       return;
-    }
-  }*/
+    }*/
+  }
 
   // Setup
   $story_id = $args['story_id'];
